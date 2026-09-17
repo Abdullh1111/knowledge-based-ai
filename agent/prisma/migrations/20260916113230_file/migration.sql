@@ -6,3 +6,5 @@ CREATE TABLE "File" (
 
     CONSTRAINT "File_pkey" PRIMARY KEY ("id")
 );
+
+CREATE EXTENSION IF NOT EXISTS vector;

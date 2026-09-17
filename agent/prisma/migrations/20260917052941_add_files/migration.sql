@@ -12,7 +12,7 @@ CREATE TABLE "Files" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "url" TEXT,
-    "embedding" vector(1536),
+    "embedding" vector(384),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Files_pkey" PRIMARY KEY ("id")

@@ -17,6 +17,7 @@ model Files {
   id        String    @id @default(uuid())
   name      String
   url       String?
-  embedding Unsupported("vector(1536)")?
+  content   String
+  embedding Unsupported("vector(384)")?
   createdAt DateTime    @default(now())
 }
