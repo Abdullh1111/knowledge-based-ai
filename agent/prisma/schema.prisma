@@ -12,12 +12,69 @@ datasource db {
   provider = "postgresql"
 }
 
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum FileStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  name      String?
+  createdAt DateTime  @default(now())
+  messages  Message[]
+  files     Files[]
+}
+
+model Message {
+  id      String      @id @default(ulid())
+  content String?
+  role    MessageRole @default(USER)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  files     Files[]
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
 
 model Files {
-  id        String    @id @default(uuid())
-  name      String
-  url       String?
-  content   String
-  embedding Unsupported("vector(384)")?
+  id      String     @id @default(uuid())
+  name    String
+  url     String?
+  content String
+  status  FileStatus @default(PENDING)
+
+  messageId String?
+  message   Message? @relation(references: [id], fields: [messageId], onDelete: SetNull)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  chunks    FileChunk[]
   createdAt DateTime    @default(now())
+
+  @@index([conversationId])
+  @@index([messageId])
+}
+
+model FileChunk {
+  id         String                      @id @default(uuid())
+  content    String
+  chunkIndex Int
+  embedding  Unsupported("vector(384)")?
+
+  fileId String
+  file   Files  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, chunkIndex])
 }
