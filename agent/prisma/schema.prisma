@@ -13,8 +13,10 @@ datasource db {
 }
 
 
-model File {
+model Files {
   id        String    @id @default(uuid())
   name      String
-  url       String
+  url       String?
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime    @default(now())
 }
