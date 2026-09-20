@@ -1,19 +1,35 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { FileUploadService } from 'src/libs/file-upload/file-upload.service';
 import { FilesService } from './files.service';
+import { extractTextFromBuffer } from './text-extractor.util';
 
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly fileUploadService: FileUploadService,
+  ) {}
 
   @Post()
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async create(
-    @Body('content') content: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body('name') name?: string,
-    @Body('url') url?: string,
     @Body('conversationId') conversationId?: string,
     @Body('messageId') messageId?: string,
   ) {
-    return this.filesService.create({ content, name, url, conversationId, messageId });
+    const uploaded = await this.fileUploadService.uploadFile(file, 'files');
+    const content = await extractTextFromBuffer(file.buffer, file.mimetype, file.originalname);
+
+    return this.filesService.create({
+      content,
+      name: name ?? file.originalname,
+      url: uploaded.url,
+      conversationId,
+      messageId,
+    });
   }
 
   @Get('search')

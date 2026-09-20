@@ -4,6 +4,7 @@ import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module';
 import { FilesModule } from './modules/files/files.module';
 import { PrismaModule } from './libs/prisma/prisma.module';
 import { EmbeddingModule } from './libs/embedding/embedding.module';
+import { FileUploadModule } from './libs/file-upload/file-upload.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { EmbeddingModule } from './libs/embedding/embedding.module';
     }),
     PrismaModule,
     EmbeddingModule,
+    FileUploadModule,
     AiAssistantModule,
     FilesModule,
   ],
