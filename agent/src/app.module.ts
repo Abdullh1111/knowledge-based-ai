@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
 import { AiAssistantModule } from './modules/ai-assistant/ai-assistant.module';
 import { FilesModule } from './modules/files/files.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
@@ -19,7 +20,7 @@ import { FileUploadModule } from './libs/file-upload/file-upload.module';
     FilesModule,
     ConversationsModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {}
