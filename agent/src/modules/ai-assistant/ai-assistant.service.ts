@@ -20,6 +20,9 @@ const AgentState = new StateSchema({
 
 type AgentStateType = typeof AgentState.State;
 
+/** Node whose token stream is shown to the user; other nodes (e.g. routing) stay internal. */
+const ANSWER_NODE = 'generateAnswer';
+
 @Injectable()
 export class AiAssistantService {
   constructor(
@@ -65,20 +68,28 @@ export class AiAssistantService {
   private graph = new StateGraph(AgentState)
     .addNode('decideRoute', this.decideRoute)
     .addNode('searchKnowledge', this.searchKnowledge)
-    .addNode('generateAnswer', this.generateAnswer)
+    .addNode(ANSWER_NODE, this.generateAnswer)
     .addEdge(START, 'decideRoute')
     .addConditionalEdges(
       'decideRoute',
-      (state: AgentStateType) => (state.route === 'vectorSearch' ? 'searchKnowledge' : 'generateAnswer'),
-      ['searchKnowledge', 'generateAnswer'],
+      (state: AgentStateType) => (state.route === 'vectorSearch' ? 'searchKnowledge' : ANSWER_NODE),
+      ['searchKnowledge', ANSWER_NODE],
     )
-    .addEdge('searchKnowledge', 'generateAnswer')
-    .addEdge('generateAnswer', END)
+    .addEdge('searchKnowledge', ANSWER_NODE)
+    .addEdge(ANSWER_NODE, END)
     .compile();
 
+  private async resolveConversationId(input: string, conversationId?: string) {
+    if (conversationId) return conversationId;
+
+    const conversation = await this.prisma.conversation.create({
+      data: { name: input.slice(0, 60) },
+    });
+    return conversation.id;
+  }
+
   async ask(input: string, conversationId?: string) {
-    const resolvedConversationId =
-      conversationId ?? (await this.prisma.conversation.create({ data: {} })).id;
+    const resolvedConversationId = await this.resolveConversationId(input, conversationId);
 
     await this.prisma.message.create({
       data: { content: input, role: MessageRole.USER, conversationId: resolvedConversationId },
@@ -102,5 +113,52 @@ export class AiAssistantService {
       route: result.route,
       output: result.output,
     };
+  }
+
+  /**
+   * Same graph as `ask`, but streamed: `streamMode: ["messages", "values"]` gives
+   * per-token chat-model chunks (tagged with the node that produced them via
+   * `checkpoint_ns`) alongside full-state snapshots. Only tokens from the
+   * `generateAnswer` node are forwarded — the routing agent's tokens stay internal.
+   */
+  async askStream(
+    input: string,
+    conversationId: string | undefined,
+    onToken: (token: string) => void,
+  ) {
+    const resolvedConversationId = await this.resolveConversationId(input, conversationId);
+
+    await this.prisma.message.create({
+      data: { content: input, role: MessageRole.USER, conversationId: resolvedConversationId },
+    });
+
+    const stream = await this.graph.stream(
+      { input, conversationId: resolvedConversationId },
+      { streamMode: ['messages', 'values'] },
+    );
+
+    let finalState: AgentStateType | undefined;
+
+    for await (const [mode, payload] of stream) {
+      if (mode === 'values') {
+        finalState = payload;
+        continue;
+      }
+
+      const [chunk, metadata] = payload;
+      if (!(metadata.checkpoint_ns as string | undefined)?.startsWith(ANSWER_NODE)) continue;
+
+      if (typeof chunk.content === 'string' && chunk.content) {
+        onToken(chunk.content);
+      }
+    }
+
+    const output = finalState?.output ?? '';
+
+    await this.prisma.message.create({
+      data: { content: output, role: MessageRole.ASSISTANT, conversationId: resolvedConversationId },
+    });
+
+    return { conversationId: resolvedConversationId, route: finalState?.route, output };
   }
 }
