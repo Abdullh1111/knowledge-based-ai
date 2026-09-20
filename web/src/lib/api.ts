@@ -24,3 +24,24 @@ export async function fetchConversationMessages(id: string): Promise<Conversatio
   if (!res.ok) throw new Error("Failed to load messages");
   return res.json();
 }
+
+export interface UploadedFileResult {
+  id: string;
+  name: string;
+  url: string | null;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  conversationId: string;
+}
+
+export async function uploadFile(file: File, conversationId?: string): Promise<UploadedFileResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (conversationId) formData.append("conversationId", conversationId);
+
+  const res = await fetch(`${API_URL}/files`, { method: "POST", body: formData });
+  if (!res.ok) {
+    const body = await res.json().catch(() => undefined);
+    throw new Error(body?.message ?? "Failed to upload file");
+  }
+  return res.json();
+}

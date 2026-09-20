@@ -4,7 +4,7 @@ import { MessageRole } from 'generated/prisma/enums';
 import { z } from 'zod';
 import { PrismaService } from '../../libs/prisma/prisma.service';
 import { FilesService } from '../files/files.service';
-import { decisionAgent, mainAgent } from './model';
+import { getDecisionAgent, getMainAgent } from './model';
 
 interface KnowledgeChunk {
   content: string;
@@ -31,7 +31,7 @@ export class AiAssistantService {
   ) {}
 
   private decideRoute = async (state: AgentStateType) => {
-    const result = await decisionAgent.invoke({
+    const result = await getDecisionAgent().invoke({
       messages: [{ role: 'user', content: state.input }],
     });
 
@@ -52,7 +52,7 @@ export class AiAssistantService {
       ? `Use the following context to answer the question.\n\nContext:\n${state.context}\n\nQuestion: ${state.input}`
       : state.input;
 
-    const result = await mainAgent.invoke({
+    const result = await getMainAgent().invoke({
       messages: [{ role: 'user', content: prompt }],
     });
 

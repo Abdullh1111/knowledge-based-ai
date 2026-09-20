@@ -156,19 +156,40 @@ const decisionAgentResponseFormat = z.object({
   reason: z.string(),
 });
 
-const model = new ChatOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  model: 'deepseek/deepseek-v4-pro',
-  temperature: 0.3,
-});
+let model: ChatOpenRouter | undefined;
 
-export const decisionAgent = createAgent({
-  model,
-  systemPrompt: decisionAgentSystemPrompt,
-  responseFormat: decisionAgentResponseFormat,
-});
+function getModel() {
+  if (!model) {
+    model = new ChatOpenRouter({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      model: 'deepseek/deepseek-v4-pro',
+      temperature: 0.3,
+    });
+  }
+  return model;
+}
 
-export const mainAgent = createAgent({
-  model,
-  systemPrompt: MAIN_AGENT_SYSTEM_PROMPT,
-});
+let decisionAgentInstance: ReturnType<typeof createAgent> | undefined;
+
+export function getDecisionAgent() {
+  if (!decisionAgentInstance) {
+    decisionAgentInstance = createAgent({
+      model: getModel(),
+      systemPrompt: decisionAgentSystemPrompt,
+      responseFormat: decisionAgentResponseFormat,
+    });
+  }
+  return decisionAgentInstance;
+}
+
+let mainAgentInstance: ReturnType<typeof createAgent> | undefined;
+
+export function getMainAgent() {
+  if (!mainAgentInstance) {
+    mainAgentInstance = createAgent({
+      model: getModel(),
+      systemPrompt: MAIN_AGENT_SYSTEM_PROMPT,
+    });
+  }
+  return mainAgentInstance;
+}
