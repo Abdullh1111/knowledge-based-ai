@@ -38,7 +38,7 @@ export class FilesController {
   }
 
   @Get()
-  async findAll() {
-    return this.filesService.findAll();
+  async findAll(@Query('conversationId') conversationId?: string) {
+    return this.filesService.findAll(conversationId);
   }
 }

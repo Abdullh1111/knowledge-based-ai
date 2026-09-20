@@ -85,7 +85,10 @@ export class FilesService {
 
     return this.prisma.files.findUnique({
       where: { id: file.id },
-      include: { chunks: { select: { id: true, chunkIndex: true, content: true } } },
+      include: {
+        chunks: { select: { id: true, chunkIndex: true, content: true } },
+        _count: { select: { chunks: true } },
+      },
     });
   }
 
@@ -113,7 +116,11 @@ export class FilesService {
     `;
   }
 
-  async findAll() {
-    return this.prisma.files.findMany();
+  async findAll(conversationId?: string) {
+    return this.prisma.files.findMany({
+      where: conversationId ? { conversationId } : undefined,
+      orderBy: { createdAt: 'asc' },
+      include: { _count: { select: { chunks: true } } },
+    });
   }
 }

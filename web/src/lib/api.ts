@@ -31,6 +31,7 @@ export interface UploadedFileResult {
   url: string | null;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   conversationId: string;
+  _count: { chunks: number };
 }
 
 export async function uploadFile(file: File, conversationId?: string): Promise<UploadedFileResult> {
@@ -43,5 +44,20 @@ export async function uploadFile(file: File, conversationId?: string): Promise<U
     const body = await res.json().catch(() => undefined);
     throw new Error(body?.message ?? "Failed to upload file");
   }
+  return res.json();
+}
+
+export interface ConversationFile {
+  id: string;
+  name: string;
+  url: string | null;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  conversationId: string;
+  _count: { chunks: number };
+}
+
+export async function fetchConversationFiles(conversationId: string): Promise<ConversationFile[]> {
+  const res = await fetch(`${API_URL}/files?conversationId=${conversationId}`);
+  if (!res.ok) throw new Error("Failed to load files");
   return res.json();
 }

@@ -2,7 +2,12 @@
 
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { loadConversationMessages, loadConversations, newConversation } from "@/store/chatSlice";
+import {
+  loadConversationFiles,
+  loadConversationMessages,
+  loadConversations,
+  newConversation,
+} from "@/store/chatSlice";
 
 export default function Sidebar() {
   const dispatch = useAppDispatch();
@@ -33,7 +38,10 @@ export default function Sidebar() {
             key={conversation.id}
             type="button"
             disabled={isStreaming}
-            onClick={() => dispatch(loadConversationMessages(conversation.id))}
+            onClick={() => {
+              dispatch(loadConversationMessages(conversation.id));
+              dispatch(loadConversationFiles(conversation.id));
+            }}
             className={`block w-full truncate rounded-lg px-3 py-2 text-left text-sm disabled:opacity-40 ${
               conversation.id === activeConversationId
                 ? "bg-black/10 dark:bg-white/10"

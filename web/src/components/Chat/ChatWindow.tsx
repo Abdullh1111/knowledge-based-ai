@@ -18,6 +18,7 @@ const ACCEPTED_FILE_TYPES = ".pdf,.docx,.txt,.csv";
 export default function ChatWindow() {
   const dispatch = useAppDispatch();
   const messages = useAppSelector((state) => state.chat.messages);
+  const files = useAppSelector((state) => state.chat.files);
   const connected = useAppSelector((state) => state.chat.connected);
   const isStreaming = useAppSelector((state) => state.chat.isStreaming);
   const isUploading = useAppSelector((state) => state.chat.isUploading);
@@ -92,6 +93,29 @@ export default function ChatWindow() {
         </span>
       </header>
 
+      {files.length > 0 && (
+        <div className="border-b border-black/10 px-4 py-2 dark:border-white/10">
+          <div className="mx-auto flex w-full max-w-2xl flex-wrap gap-2">
+            {files.map((file) => (
+              <div
+                key={file.id}
+                className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-xs text-black dark:bg-zinc-800 dark:text-white"
+              >
+                <span>📎</span>
+                <span className="max-w-[160px] truncate">{file.name}</span>
+                {file.status === "uploading" && <span className="opacity-70">Uploading...</span>}
+                {file.status === "FAILED" && (
+                  <span className="text-red-500">{file.error || "Failed"}</span>
+                )}
+                {file.status !== "uploading" && file.status !== "FAILED" && (
+                  <span className="opacity-70">{file.chunkCount ?? 0} chunks</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
           {messages.length === 0 && (
@@ -101,26 +125,6 @@ export default function ChatWindow() {
           )}
 
           {messages.map((message) => {
-            if (message.role === "file") {
-              return (
-                <div key={message.id} className="flex justify-end">
-                  <div className="flex max-w-[80%] items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-black">
-                    <span>📎</span>
-                    <span className="truncate">{message.fileName}</span>
-                    {message.fileStatus === "uploading" && (
-                      <span className="text-xs opacity-70">Uploading...</span>
-                    )}
-                    {message.fileStatus === "completed" && (
-                      <span className="text-xs opacity-70">Ready</span>
-                    )}
-                    {message.fileStatus === "failed" && (
-                      <span className="text-xs text-red-400">{message.content || "Failed"}</span>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-
             return (
               <div
                 key={message.id}

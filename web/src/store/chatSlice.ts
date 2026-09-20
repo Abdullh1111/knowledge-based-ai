@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, nanoid, type PayloadAction } from "@reduxjs/toolkit";
 import {
+  fetchConversationFiles,
   fetchConversationMessages,
   fetchConversations,
   uploadFile,
@@ -9,30 +10,40 @@ import type { RootState } from "./store";
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant" | "file";
+  role: "user" | "assistant";
   content: string;
   streaming?: boolean;
-  fileName?: string;
-  fileStatus?: "uploading" | "completed" | "failed";
+}
+
+export interface ChatFile {
+  id: string;
+  name: string;
+  status: "uploading" | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  chunkCount?: number;
+  error?: string;
 }
 
 interface ChatState {
   messages: ChatMessage[];
+  files: ChatFile[];
   conversationId?: string;
   connected: boolean;
   isStreaming: boolean;
   isUploading: boolean;
   conversations: ConversationSummary[];
   loadingMessages: boolean;
+  loadingFiles: boolean;
 }
 
 const initialState: ChatState = {
   messages: [],
+  files: [],
   connected: false,
   isStreaming: false,
   isUploading: false,
   conversations: [],
   loadingMessages: false,
+  loadingFiles: false,
 };
 
 export const loadConversations = createAsyncThunk("chat/loadConversations", async () => {
@@ -55,6 +66,14 @@ export const uploadChatFile = createAsyncThunk<
   return uploadFile(file, getState().chat.conversationId);
 });
 
+export const loadConversationFiles = createAsyncThunk(
+  "chat/loadConversationFiles",
+  async (conversationId: string) => {
+    const files = await fetchConversationFiles(conversationId);
+    return { conversationId, files };
+  },
+);
+
 const chatSlice = createSlice({
   name: "chat",
   initialState,
@@ -65,6 +84,7 @@ const chatSlice = createSlice({
     newConversation(state) {
       state.conversationId = undefined;
       state.messages = [];
+      state.files = [];
       state.isStreaming = false;
     },
     messageSent(state, action: PayloadAction<{ content: string }>) {
@@ -117,30 +137,45 @@ const chatSlice = createSlice({
       .addCase(loadConversationMessages.rejected, (state) => {
         state.loadingMessages = false;
       })
+      .addCase(loadConversationFiles.pending, (state) => {
+        state.loadingFiles = true;
+      })
+      .addCase(loadConversationFiles.fulfilled, (state, action) => {
+        state.files = action.payload.files.map((file) => ({
+          id: file.id,
+          name: file.name,
+          status: file.status,
+          chunkCount: file._count.chunks,
+        }));
+        state.loadingFiles = false;
+      })
+      .addCase(loadConversationFiles.rejected, (state) => {
+        state.loadingFiles = false;
+      })
       .addCase(uploadChatFile.pending, (state, action) => {
         state.isUploading = true;
-        state.messages.push({
+        state.files.push({
           id: action.meta.arg.localId,
-          role: "file",
-          content: "",
-          fileName: action.meta.arg.file.name,
-          fileStatus: "uploading",
+          name: action.meta.arg.file.name,
+          status: "uploading",
         });
       })
       .addCase(uploadChatFile.fulfilled, (state, action) => {
         state.isUploading = false;
         state.conversationId = action.payload.conversationId;
-        const message = state.messages.find((item) => item.id === action.meta.arg.localId);
-        if (message) {
-          message.fileStatus = action.payload.status === "FAILED" ? "failed" : "completed";
+        const file = state.files.find((item) => item.id === action.meta.arg.localId);
+        if (file) {
+          file.id = action.payload.id;
+          file.status = action.payload.status;
+          file.chunkCount = action.payload._count.chunks;
         }
       })
       .addCase(uploadChatFile.rejected, (state, action) => {
         state.isUploading = false;
-        const message = state.messages.find((item) => item.id === action.meta.arg.localId);
-        if (message) {
-          message.fileStatus = "failed";
-          message.content = action.error.message ?? "Upload failed";
+        const file = state.files.find((item) => item.id === action.meta.arg.localId);
+        if (file) {
+          file.status = "FAILED";
+          file.error = action.error.message ?? "Upload failed";
         }
       });
   },
