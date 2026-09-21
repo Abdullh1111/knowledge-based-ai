@@ -71,7 +71,7 @@ model FileChunk {
   id         String                      @id @default(uuid())
   content    String
   chunkIndex Int
-  embedding  Unsupported("vector(384)")?
+  embedding  Unsupported("vector(1024)")?
 
   fileId String
   file   Files  @relation(fields: [fileId], references: [id], onDelete: Cascade)

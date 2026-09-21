@@ -1,21 +1,13 @@
-import { HuggingFaceTransformersEmbeddings } from '@langchain/community/embeddings/huggingface_transformers';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { OpenAIEmbeddings } from '@langchain/openai';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class EmbeddingService implements OnModuleInit {
-  private embeddings!: HuggingFaceTransformersEmbeddings;
-
-  async onModuleInit() {
-    console.log('Loading embeddings models');
-
-    this.embeddings = new HuggingFaceTransformersEmbeddings({
-      model: 'Xenova/all-MiniLM-L6-v2',
-    });
-
-    await this.embeddings.embedQuery('initialization');
-
-    console.log('Embeddings models loaded');
-  }
+export class EmbeddingService {
+  private readonly embeddings = new OpenAIEmbeddings({
+    apiKey: process.env.OPENROUTER_API_KEY,
+    model: 'qwen/qwen3-embedding-0.6b',
+    configuration: { baseURL: 'https://openrouter.ai/api/v1' },
+  });
 
   async getEmbeddings(text: string) {
     return await this.embeddings.embedQuery(text);
