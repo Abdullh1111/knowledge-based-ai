@@ -1,11 +1,5 @@
-import Sidebar from "@/components/Chat/Sidebar";
-import ChatWindow from "@/components/Chat/ChatWindow";
+import ChatLayout from "@/components/Chat/ChatLayout";
 
 export default function Home() {
-  return (
-    <div className="flex flex-1 bg-zinc-50 dark:bg-black">
-      <Sidebar />
-      <ChatWindow />
-    </div>
-  );
+  return <ChatLayout />;
 }

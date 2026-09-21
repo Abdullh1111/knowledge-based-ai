@@ -15,7 +15,11 @@ import {
 
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.txt,.csv";
 
-export default function ChatWindow() {
+type ChatWindowProps = {
+  onOpenSidebar: () => void;
+};
+
+export default function ChatWindow({ onOpenSidebar }: ChatWindowProps) {
   const dispatch = useAppDispatch();
   const messages = useAppSelector((state) => state.chat.messages);
   const files = useAppSelector((state) => state.chat.files);
@@ -84,17 +88,27 @@ export default function ChatWindow() {
   const disabled = isStreaming || isUploading;
 
   return (
-    <div className="flex flex-1 flex-col min-w-0">
-      <header className="flex items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10">
-        <h1 className="text-base font-semibold">Knowledge Assistant</h1>
-        <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+    <div className="flex min-h-0 flex-1 flex-col min-w-0">
+      <header className="flex items-center justify-between gap-2 border-b border-black/10 px-3 py-3 sm:px-4 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            aria-label="Open sidebar"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-black/10 text-sm dark:border-white/10 md:hidden"
+          >
+            ☰
+          </button>
+          <h1 className="truncate text-base font-semibold">Knowledge Assistant</h1>
+        </div>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-zinc-500">
           <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-zinc-400"}`} />
-          {connected ? "Connected" : "Connecting..."}
+          <span className="hidden sm:inline">{connected ? "Connected" : "Connecting..."}</span>
         </span>
       </header>
 
       {files.length > 0 && (
-        <div className="border-b border-black/10 px-4 py-2 dark:border-white/10">
+        <div className="border-b border-black/10 px-3 py-2 sm:px-4 dark:border-white/10">
           <div className="mx-auto flex w-full max-w-2xl flex-wrap gap-2">
             {files.map((file) => (
               <div
@@ -102,7 +116,7 @@ export default function ChatWindow() {
                 className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1 text-xs text-black dark:bg-zinc-800 dark:text-white"
               >
                 <span>📎</span>
-                <span className="max-w-[160px] truncate">{file.name}</span>
+                <span className="max-w-[120px] truncate sm:max-w-[160px]">{file.name}</span>
                 {file.status === "uploading" && <span className="opacity-70">Uploading...</span>}
                 {file.status === "FAILED" && (
                   <span className="text-red-500">{file.error || "Failed"}</span>
@@ -116,7 +130,7 @@ export default function ChatWindow() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-4 sm:py-6">
         <div className="mx-auto w-full max-w-2xl space-y-4">
           {messages.length === 0 && (
             <p className="mt-10 text-center text-sm text-zinc-500">
@@ -131,7 +145,7 @@ export default function ChatWindow() {
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm ${
+                  className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm sm:max-w-[80%] ${
                     message.role === "user"
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-black"
                       : "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white"
@@ -147,7 +161,7 @@ export default function ChatWindow() {
         </div>
       </div>
 
-      <div className="border-t border-black/10 px-4 py-3 dark:border-white/10">
+      <div className="border-t border-black/10 px-3 py-3 sm:px-4 dark:border-white/10">
         <form
           onSubmit={(event) => {
             event.preventDefault();
