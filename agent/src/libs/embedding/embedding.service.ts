@@ -5,7 +5,7 @@ import { Injectable } from '@nestjs/common';
 export class EmbeddingService {
   private readonly embeddings = new OpenAIEmbeddings({
     apiKey: process.env.OPENROUTER_API_KEY,
-    model: 'qwen/qwen3-embedding-0.6b',
+    model: 'baai/bge-m3',
     configuration: { baseURL: 'https://openrouter.ai/api/v1' },
   });
 
