@@ -6,7 +6,6 @@ import { FilesModule } from './modules/files/files.module';
 import { ConversationsModule } from './modules/conversations/conversations.module';
 import { PrismaModule } from './libs/prisma/prisma.module';
 import { EmbeddingModule } from './libs/embedding/embedding.module';
-import { FileUploadModule } from './libs/file-upload/file-upload.module';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { FileUploadModule } from './libs/file-upload/file-upload.module';
     }),
     PrismaModule,
     EmbeddingModule,
-    FileUploadModule,
     AiAssistantModule,
     FilesModule,
     ConversationsModule,

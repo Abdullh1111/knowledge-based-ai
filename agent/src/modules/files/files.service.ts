@@ -11,7 +11,6 @@ const SEARCH_TOP_K = 5;
 interface CreateFileInput {
   content: string;
   name?: string;
-  url?: string;
   conversationId?: string;
   messageId?: string;
 }
@@ -49,7 +48,6 @@ export class FilesService {
     const file = await this.prisma.files.create({
       data: {
         name: input.name ?? 'untitled',
-        url: input.url,
         content: input.content,
         conversationId,
         messageId: input.messageId,
@@ -59,17 +57,22 @@ export class FilesService {
 
     try {
       const chunks = this.chunkText(input.content);
-      const chunkEmbeddings = await this.embeddings.embeddFile(chunks);
 
-      await this.prisma.$transaction(
-        chunks.map((chunk, index) => {
-          const vector = this.toVectorLiteral(chunkEmbeddings[index]);
-          return this.prisma.$executeRaw`
-            INSERT INTO "FileChunk" ("id", "content", "chunkIndex", "embedding", "fileId")
-            VALUES (${randomUUID()}, ${chunk}, ${index}, ${vector}::vector, ${file.id})
-          `;
-        }),
-      );
+      // No extractable text (e.g. unparseable file) — leave it at 0 chunks
+      // instead of calling the embedding API with an empty batch.
+      if (chunks.length > 0) {
+        const chunkEmbeddings = await this.embeddings.embeddFile(chunks);
+
+        await this.prisma.$transaction(
+          chunks.map((chunk, index) => {
+            const vector = this.toVectorLiteral(chunkEmbeddings[index]);
+            return this.prisma.$executeRaw`
+              INSERT INTO "FileChunk" ("id", "content", "chunkIndex", "embedding", "fileId")
+              VALUES (${randomUUID()}, ${chunk}, ${index}, ${vector}::vector, ${file.id})
+            `;
+          }),
+        );
+      }
 
       await this.prisma.files.update({
         where: { id: file.id },
@@ -98,7 +101,7 @@ export class FilesService {
 
     if (conversationId) {
       return this.prisma.$queryRaw`
-        SELECT fc."id", fc."content", fc."chunkIndex", fc."fileId", f."name", f."url"
+        SELECT fc."id", fc."content", fc."chunkIndex", fc."fileId", f."name"
         FROM "FileChunk" fc
         JOIN "Files" f ON f."id" = fc."fileId"
         WHERE f."conversationId" = ${conversationId}

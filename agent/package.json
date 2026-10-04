@@ -33,7 +33,6 @@
     "@nestjs/websockets": "11.2.5",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "@supabase/supabase-js": "^2.116.0",
     "langchain": "^1.5.11",
     "mammoth": "^1.12.3",
     "pdf-parse": "^2.4.5",
