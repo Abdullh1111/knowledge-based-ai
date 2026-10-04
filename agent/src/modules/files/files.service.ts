@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { EmbeddingService } from 'src/libs/embedding/embedding.service';
 import { PrismaService } from 'src/libs/prisma/prisma.service';
 import { FileStatus } from 'generated/prisma/enums';
+import { Prisma } from 'generated/prisma/client';
 
 const CHUNK_SIZE = 800;
 const CHUNK_OVERLAP = 100;
@@ -63,15 +64,17 @@ export class FilesService {
       if (chunks.length > 0) {
         const chunkEmbeddings = await this.embeddings.embeddFile(chunks);
 
-        await this.prisma.$transaction(
+        const rows = Prisma.join(
           chunks.map((chunk, index) => {
             const vector = this.toVectorLiteral(chunkEmbeddings[index]);
-            return this.prisma.$executeRaw`
-              INSERT INTO "FileChunk" ("id", "content", "chunkIndex", "embedding", "fileId")
-              VALUES (${randomUUID()}, ${chunk}, ${index}, ${vector}::vector, ${file.id})
-            `;
+            return Prisma.sql`(${randomUUID()}, ${chunk}, ${index}, ${vector}::vector, ${file.id})`;
           }),
         );
+
+        await this.prisma.$executeRaw`
+          INSERT INTO "FileChunk" ("id", "content", "chunkIndex", "embedding", "fileId")
+          VALUES ${rows}
+        `;
       }
 
       await this.prisma.files.update({
